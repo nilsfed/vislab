@@ -41,28 +41,35 @@
    </variables>
 
    <sequence>
-       <receive
-          name="start"
-          partnerLink="helloPartnerLink"
-          portType="test:HelloPortType"
-          operation="hello"
-          variable="myVar"
-          createInstance="yes"/>
+		<receive name="start" partnerLink="helloPartnerLink" portType="test:HelloPortType"
+			operation="hello" variable="myVar" createInstance="yes" />
 
-      <assign name="assign1">
-          <copy>
-              <from variable="myVar" part="TestPart"/>
-              <to variable="tmpVar"/>
-          </copy>
-          <copy>
-              <from>concat($tmpVar,' World')</from>
-              <to variable="myVar" part="TestPart"/>
-          </copy>
-      </assign>
-       <reply name="end"  
-              partnerLink="helloPartnerLink"
-              portType="test:HelloPortType" 
-              operation="hello"
-              variable="myVar"/>
-   </sequence>
+		<assign>
+			<copy>
+				<from variable="myVar" part="TestPart" />
+				<to variable="tmpVar" />
+			</copy>
+		</assign>
+		<if>
+			<condition>
+				string-length ($tmpVar) &gt; 10
+			</condition>
+			<assign>
+				<copy>
+					<from>"long"</from>
+					<to variable="myVar" part="TestPart" />
+				</copy>
+			</assign>
+			<else>
+				<assign>
+					<copy>
+						<from>"short"</from>
+						<to variable="myVar" part="TestPart" />
+					</copy>
+				</assign>
+			</else>
+		</if>
+		<reply name="end" partnerLink="helloPartnerLink" portType="test:HelloPortType"
+			operation="hello" variable="myVar" />
+	</sequence>
 </process>
