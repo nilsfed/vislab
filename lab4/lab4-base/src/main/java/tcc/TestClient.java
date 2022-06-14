@@ -20,6 +20,8 @@ import tcc.hotel.HotelReservationDoc;
 public class TestClient {
 	public static void main(String[] args) {
 		try {
+			boolean hotelBookingSuccessful = true, flightBookingSuccessful = true;
+
 			Client client = ClientBuilder.newClient();
 			WebTarget target = client.target(TestServer.BASE_URI);
 
@@ -42,6 +44,7 @@ public class TestClient {
 					.post(Entity.xml(docFlight));
 
 			if (responseFlight.getStatus() != 200) {
+				flightBookingSuccessful = false;
 				System.out.println("Failed : HTTP error code : " + responseFlight.getStatus());
 			}
 
@@ -61,11 +64,49 @@ public class TestClient {
 					.post(Entity.xml(docHotel));
 
 			if (responseHotel.getStatus() != 200) {
+				hotelBookingSuccessful = false;
 				System.out.println("Failed : HTTP error code : " + responseHotel.getStatus());
 			}
 
 			HotelReservationDoc outputHotel = responseHotel.readEntity(HotelReservationDoc.class);
 			System.out.println("Output from Server: " + outputHotel);
+
+			if (hotelBookingSuccessful && flightBookingSuccessful) {
+				target = client.target(outputHotel.getUrl());
+				responseHotel = target.request().put(Entity.text(""));
+
+				if (responseHotel.getStatus() != 200) {
+					hotelBookingSuccessful = false;
+					System.out.println("Failed : HTTP error code : " + responseHotel.getStatus());
+				} else {
+					System.out.println("Hotel booking successful!");
+				}
+				target = client.target(outputFlight.getUrl());
+				if (hotelBookingSuccessful) {
+					responseFlight = target.request().put(Entity.text(""));
+
+					if (responseFlight.getStatus() != 200) {
+						System.out.println("Failed : HTTP error code : " + responseFlight.getStatus());
+					} else {
+						System.out.println("Flight booking successful!");
+					}
+				} else {
+					target.request().delete();
+				}
+			} else {
+				System.out.println("Rollback!");
+				if (hotelBookingSuccessful) {
+					target = client.target(outputHotel.getUrl());
+					responseHotel = target.request().delete();
+					System.out.println("Hotel: " + responseHotel.readEntity(String.class));
+				}
+				if (flightBookingSuccessful) {
+					target = client.target(outputFlight.getUrl());
+					responseFlight = target.request().delete();
+					System.out.println("Flight: " + responseFlight.readEntity(String.class));
+				}
+			}
+			System.out.println("Transaction complete!");
 
 		} catch (Exception e) {
 			e.printStackTrace();
